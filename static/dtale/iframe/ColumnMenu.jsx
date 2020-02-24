@@ -20,12 +20,34 @@ const MOVE_COLS = [
   ["step-forward", serverState.moveToBack, "Move Column To Back", {}],
 ];
 
+function buildCaretClass(caretPct = 90) {
+  const lastCaretStyle = $("head").find("style:last-child")[0].innerHTML;
+  if (_.endsWith(lastCaretStyle, ".column-toggle__dropdown::after {right: " + caretPct + "%}")) {
+    return; // don't continually add styling if its already set
+  }
+  const finalCaretPct = _.isUndefined(caretPct) ? 90 : caretPct;
+  let caretStyle = "<style>";
+  caretStyle += ".column-toggle__dropdown::before {right: " + finalCaretPct + "%}";
+  caretStyle += ".column-toggle__dropdown::after {right: " + finalCaretPct + "%}";
+  caretStyle += "</style>";
+  $("head").append(caretStyle);
+}
+
 class ReactColumnMenu extends React.Component {
   componentDidUpdate(prevProps) {
     if (!_.isNull(this.props.selectedCol) && this.props.selectedCol !== prevProps.selectedCol) {
-      $(this._div).css({
-        left: $(`div.${this.props.selectedToggle}`).offset().left,
-      });
+      const currLeft = $(`div.${this.props.selectedToggle}`).offset().left;
+      const divWidth = $(this._div).width();
+      if (currLeft + divWidth > window.innerWidth) {
+        const finalLeft = currLeft - (currLeft + divWidth + 20 - window.innerWidth);
+        $(this._div).css({ left: finalLeft });
+        const overlapPct = (currLeft - (finalLeft - 20)) / divWidth;
+        const caretPct = Math.floor(100 - overlapPct * 100);
+        buildCaretClass(caretPct);
+      } else {
+        $(this._div).css({ left: currLeft });
+        buildCaretClass();
+      }
     }
   }
 
